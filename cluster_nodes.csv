@@ -8,7 +8,7 @@ cap04,amit,,To be OpenStack compute
 cap05,amit,,To be OpenStack compute
 cap06,xb/amit,Paired with cap07 to generate SR-IOV/VFIO data. Amit might have made software changes,To be OpenStack compute
 cap07,xb/amit,Paired with cap07 to generate SR-IOV/VFIO data. Amit might have made software changes,To be OpenStack compute
-cap08,xb,The machine to host generated data sets,To be OpenStack compute,
+cap08,xb,The machine to host generated data sets,To be OpenStack compute
 cap09,amit,,To be OpenStack compute
 cap10,lianjie,,To be OpenStack compute
 cap11,amit,,To be OpenStack compute
