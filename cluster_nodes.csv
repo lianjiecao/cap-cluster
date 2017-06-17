@@ -1,0 +1,39 @@
+Hostname,User,Usage,Note
+ohio,
+wabash,lianjie,OpenStack controller
+cap01,lianjie,OpenStack network
+cap02,lianjie,OpenStack compute
+cap03,amit,Used to pair with cap09 to generate Suricata data. Amit made changes later,To be OpenStack compute
+cap04,amit,,To be OpenStack compute
+cap05,amit,,To be OpenStack compute
+cap06,xb/amit,Paired with cap07 to generate SR-IOV/VFIO data. Amit might have made software changes,To be OpenStack compute
+cap07,xb/amit,Paired with cap07 to generate SR-IOV/VFIO data. Amit might have made software changes,To be OpenStack compute
+cap08,xb,The machine to host generated data sets,To be OpenStack compute,
+cap09,amit,,To be OpenStack compute
+cap10,lianjie,,To be OpenStack compute
+cap11,amit,,To be OpenStack compute
+cap12,amit,Offline,To be OpenStack compute
+cap13,xb,Installed Ubuntu Server 16.04.1. Paired with cap14 to generate bare metal data,To be OpenStack compute
+cap14,xb,Installed Ubuntu Server 16.04.1. Paired with cap13,To be OpenStack compute
+cap15,xb,Installed Ubuntu Server 16.04.1. Paired with cap16 to generate Docker/DockerV data,To be OpenStack compute
+cap16,xb,Installed Ubuntu Server 16.04.1. Paired with cap15,To be OpenStack compute
+cap17,xb,Installed Ubuntu Server 16.04.1 Paired with cap20 to generate VM data,The HDD Amit was using is moved to cap23. Probably dead. Haven't double checked.
+cap18,amit,,
+cap19,amit,,
+cap20,xb,Installed Ubuntu Server 16.04.1 Paired with cap17 to generate VM data,
+cap21,xb,Installed Ubuntu Server 16.04.1 Paired with cap22 to generate VM/VFIO data,
+cap22,xb,Installed Ubuntu Server 16.04.1 Paired with cap21 to generate VM/VFIO data,
+cap23,,Offline.No HDD.,Amit's old cap17 data is here
+cap24,adil,Fresh Ubuntu Server 16.04.1,
+cap25,Samuel,Ubuntu 14.04.5 LTS,
+cap26,haleema,Fresh Ubuntu Server 16.04.1,
+cap27,haleema,Fresh Ubuntu Server 16.04.1,
+cap28,,Offline.KVM failure.Maybe fixable.,If Adil needs more machines I could try fixing this machine.
+cap29,,Offline.(No public network?)
+cap30,,Offline.Grub issue.,
+cap31,lianjie,MaxiNet exp.,
+cap32,lianjie,MaxiNet exp.,
+cap33,lianjie,MaxiNet exp.,
+cap34,lianjie,MaxiNet exp.,
+cap35,lianjie,MaxiNet exp.,
+cap36,lianjie,MaxiNet exp.,
