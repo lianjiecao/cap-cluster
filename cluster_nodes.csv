@@ -1,8 +1,8 @@
 Hostname,User,Usage,Note
 ohio,,,
-wabash,lianjie,OpenStack controller
-cap01,lianjie,OpenStack network
-cap02,lianjie,OpenStack compute
+wabash,lianjie,OpenStack controller,
+cap01,lianjie,OpenStack network,
+cap02,lianjie,OpenStack compute,
 cap03,amit,Used to pair with cap09 to generate Suricata data. Amit made changes later,To be OpenStack compute
 cap04,amit,,To be OpenStack compute
 cap05,amit,,To be OpenStack compute
