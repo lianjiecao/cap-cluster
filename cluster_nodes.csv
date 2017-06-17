@@ -1,5 +1,5 @@
 Hostname,User,Usage,Note
-ohio,
+ohio,,,
 wabash,lianjie,OpenStack controller
 cap01,lianjie,OpenStack network
 cap02,lianjie,OpenStack compute
