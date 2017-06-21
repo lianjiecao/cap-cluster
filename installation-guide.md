@@ -31,6 +31,9 @@ Number of NICs on different node:
 * Network node: 3 NICs
 * Compute nodes: 2 NICs
 
+![](https://github.com/lianjiecao/cap-cluster/blob/master/openstack-cap.png?raw=true)
+Figure 1. OpenStack deployment illustration
+
 
 ## <a name="envi"></a>Environment
 
@@ -194,10 +197,12 @@ Different from the official installation guide, this manual chooses Open vSwitch
     ```
 
 1. Edit ```/etc/neutron/neutron.conf``` to enable database connection, ```RabbitMQ``` access, ```Keystone``` authentication, ```nova``` interaction, and ```ml2``` plugin.
-Click [<span style="text-decoration:underline">here</span>]() for a example configuration file.
+
+    *Click [<span style="text-decoration:underline">here</span>](https://raw.githubusercontent.com/lianjiecao/cap-cluster/master/ctl-neutron.conf) for a example configuration file.
+    
 2. Edit ```/etc/neutron/plugins/ml2/ml2_conf.ini``` to configure type drivers (_e.g._, flat, vlan, vxlan and gre) and machanism drivers (_e.g._, linuxbridge, openvswitch and l2population). In this manual, openvswitch+vxlan is chosen for Neutron.
 
-	* Configure type drivers and machanism drivers in ```[ml2]``` section.
+    * Configure type drivers and machanism drivers in ```[ml2]``` section.
         ```
         [ml2]
         type_drivers = flat,vlan,vxlan,gre
@@ -252,7 +257,7 @@ Click [<span style="text-decoration:underline">here</span>]() for a example conf
     ```
 
 2. Edit ```/etc/neutron/neutron.conf``` to enable ```Keystone``` and ```RabbitMQ``` access and disable database connection.
-    * Click [<span style="text-decoration:underline">here</span>]() for a complete configuration file.
+    * Click [<span style="text-decoration:underline">here</span>](https://raw.githubusercontent.com/lianjiecao/cap-cluster/master/nn-neutron.conf) for a complete configuration file.
 
 3. Edit ```/etc/neutron/plugins/ml2/openvswitch_agent.ini``` to configure Open vSwitch.
     * Configure ```[agent]``` section to use vxlan and l2_population.
@@ -319,7 +324,7 @@ Click [<span style="text-decoration:underline">here</span>]() for a example conf
     ```
 
 2. Edit ```/etc/neutron/neutron.conf``` to enable ```Keystone``` and ```RabbitMQ``` access and disable database connection.
-    * Click [<span style="text-decoration:underline">here</span>]() for a complete configuration file.
+    * Click [<span style="text-decoration:underline">here</span>](https://raw.githubusercontent.com/lianjiecao/cap-cluster/master/cn-neutron.conf) for a complete configuration file.
 
 3. Edit ```/etc/neutron/plugins/ml2/openvswitch_agent.ini``` to configure Open vSwitch. Very similar to the configuration on network node except ```bridge_mappings```.
     ```
