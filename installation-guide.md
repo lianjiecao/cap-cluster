@@ -484,6 +484,320 @@ Different from the official installation guide, this manual chooses Open vSwitch
           --availability-zone nova:wabash ids-1
         ```
 
+## <a name="sfc"></a>Create Service Function Chaining
+This sections talks about how to create sfc using OpenStack module networking-sfc.
+## On controller:
+* Install networking-sfc module
+
+
+* Configure Neutron and ML2 to use sfc module
+
+
+
+* Create flow classifier, port pair for each VNF VM, port pair groups that connects multiple VNF VMs and port chain that connects multiple port pair groups
+    ```
+    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-snd-1 to ids-rcv-1" --ethertype IPv4 --source-ip-prefix 192.168.2.21/32 --destination-ip-prefix 192.168.2.31/32 --logical-source-port ids-snd-1-ids-net --logical-destination-port ids-rcv-1-ids-net fc_ids-snd-1_to_ids-rcv-1
+    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+    Created a new flow_classifier:
+    +----------------------------+--------------------------------------+
+    | Field                      | Value                                |
+    +----------------------------+--------------------------------------+
+    | description                | Traffic from ids-snd-1 to ids-rcv-1  |
+    | destination_ip_prefix      | 192.168.2.31/32                      |
+    | destination_port_range_max |                                      |
+    | destination_port_range_min |                                      |
+    | ethertype                  | IPv4                                 |
+    | id                         | 6f75728c-5532-495d-8db9-a09866881b4e |
+    | l7_parameters              | {}                                   |
+    | logical_destination_port   | 53ef0cf4-a640-4a03-af65-2f21a51ad18b |
+    | logical_source_port        | 6bad8ea1-87c8-4157-b7cf-ca245113d343 |
+    | name                       | fc_ids-snd-1_to_ids-rcv-1            |
+    | project_id                 | 9b1a8bb7e17c492a9782a6678de94067     |
+    | protocol                   |                                      |
+    | source_ip_prefix           | 192.168.2.21/32                      |
+    | source_port_range_max      |                                      |
+    | source_port_range_min      |                                      |
+    | tenant_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
+    +----------------------------+--------------------------------------+
+    
+    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-rcv-1 to ids-snd-1" --ethertype IPv4 --source-ip-prefix 192.168.2.31/32 --destination-ip-prefix 192.168.2.21/32 --logical-source-port ids-rcv-1-ids-net --logical-destination-port ids-snd-1-ids-net fc_ids-rcv-1_to_ids-snd-1
+    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+    Created a new flow_classifier:
+    +----------------------------+--------------------------------------+
+    | Field                      | Value                                |
+    +----------------------------+--------------------------------------+
+    | description                | Traffic from ids-rcv-1 to ids-snd-1  |
+    | destination_ip_prefix      | 192.168.2.21/32                      |
+    | destination_port_range_max |                                      |
+    | destination_port_range_min |                                      |
+    | ethertype                  | IPv4                                 |
+    | id                         | 3f80c0cb-ef0d-4572-8cca-452ddb7926ec |
+    | l7_parameters              | {}                                   |
+    | logical_destination_port   | 6bad8ea1-87c8-4157-b7cf-ca245113d343 |
+    | logical_source_port        | 53ef0cf4-a640-4a03-af65-2f21a51ad18b |
+    | name                       | fc_ids-rcv-1_to_ids-snd-1            |
+    | project_id                 | 9b1a8bb7e17c492a9782a6678de94067     |
+    | protocol                   |                                      |
+    | source_ip_prefix           | 192.168.2.31/32                      |
+    | source_port_range_max      |                                      |
+    | source_port_range_min      |                                      |
+    | tenant_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
+    +----------------------------+--------------------------------------+
+    
+    openstack@cap01:~$ neutron flow-classifier-list
+    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+    +--------------------------------------+---------------------------+-----------------------------------------------------------------+
+    | id                                   | name                      | summary                                                         |
+    +--------------------------------------+---------------------------+-----------------------------------------------------------------+
+    | 3f80c0cb-ef0d-4572-8cca-452ddb7926ec | fc_ids-rcv-1_to_ids-snd-1 | protocol: any,                                                  |
+    |                                      |                           | source[port]: 192.168.2.31/32[any:any],                         |
+    |                                      |                           | destination[port]: 192.168.2.21/32[any:any],                    |
+    |                                      |                           | neutron_source_port: 53ef0cf4-a640-4a03-af65-2f21a51ad18b,      |
+    |                                      |                           | neutron_destination_port: 6bad8ea1-87c8-4157-b7cf-ca245113d343, |
+    |                                      |                           | l7_parameters: {}                                               |
+    | 6f75728c-5532-495d-8db9-a09866881b4e | fc_ids-snd-1_to_ids-rcv-1 | protocol: any,                                                  |
+    |                                      |                           | source[port]: 192.168.2.21/32[any:any],                         |
+    |                                      |                           | destination[port]: 192.168.2.31/32[any:any],                    |
+    |                                      |                           | neutron_source_port: 6bad8ea1-87c8-4157-b7cf-ca245113d343,      |
+    |                                      |                           | neutron_destination_port: 53ef0cf4-a640-4a03-af65-2f21a51ad18b, |
+    |                                      |                           | l7_parameters: {}                                               |
+    +--------------------------------------+---------------------------+-----------------------------------------------------------------+
+    
+    openstack@cap01:~$ neutron port-pair-create --description "ids-1" --ingress ids-1-ids-net-1 --egress ids-1-ids-net pp_ids-1 ### ingress:eth2, egress:eth1
+    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+    Created a new port_pair:
+    +-----------------------------+--------------------------------------+
+    | Field                       | Value                                |
+    +-----------------------------+--------------------------------------+
+    | description                 | ids-1                                |
+    | egress                      | 99c19408-41a9-4052-88f6-0bcb32bf3eac |
+    | id                          | 1eeecf12-e2cd-46c3-a182-0f0da491f173 |
+    | ingress                     | 8ee3cd1d-c48e-4dd7-9732-9ec764153ef6 |
+    | name                        | pp_ids-1                             |
+    | project_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
+    | service_function_parameters | {"weight": 1, "correlation": null}   |
+    | tenant_id                   | 9b1a8bb7e17c492a9782a6678de94067     |
+    +-----------------------------+--------------------------------------+
+    
+    
+    openstack@cap01:~$ neutron port-pair-group-create --port-pair pp_ids-1 ppg_ids-1
+    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+    Created a new port_pair_group:
+    +----------------------------+--------------------------------------+
+    | Field                      | Value                                |
+    +----------------------------+--------------------------------------+
+    | description                |                                      |
+    | group_id                   | 1                                    |
+    | id                         | 8c02dc85-d25b-40a2-a08c-d4f723f67f35 |
+    | name                       | ppg_ids-1                            |
+    | port_pair_group_parameters | {"lb_fields": []}                    |
+    | port_pairs                 | 1eeecf12-e2cd-46c3-a182-0f0da491f173 |
+    | project_id                 | 9b1a8bb7e17c492a9782a6678de94067     |
+    | tenant_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
+    +----------------------------+--------------------------------------+
+    
+    
+    openstack@cap01:~$ neutron port-chain-create --port-pair-group ppg_ids-1 --flow-classifier fc_ids-snd-1_to_ids-rcv-1 --flow-classifier fc_ids-rcv-1_to_ids-snd-1 pc_ids-snd-1_ids-rcv-1
+    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+    Created a new port_chain:
+    +------------------+---------------------------------------------+
+    | Field            | Value                                       |
+    +------------------+---------------------------------------------+
+    | chain_id         | 1                                           |
+    | chain_parameters | {"symmetric": false, "correlation": "mpls"} |
+    | description      |                                             |
+    | flow_classifiers | 6f75728c-5532-495d-8db9-a09866881b4e        |
+    |                  | 3f80c0cb-ef0d-4572-8cca-452ddb7926ec        |
+    | id               | 3108422d-15ad-41ae-90cf-5124dc31cce7        |
+    | name             | pc_ids-snd-1_ids-rcv-1                      |
+    | port_pair_groups | 8c02dc85-d25b-40a2-a08c-d4f723f67f35        |
+    | project_id       | 9b1a8bb7e17c492a9782a6678de94067            |
+    | tenant_id        | 9b1a8bb7e17c492a9782a6678de94067            |
+    +------------------+---------------------------------------------+
+    ```
+
+## On compute node:
+* Install networking-sfc module
+
+
+* Configure neutron-openvswitch agent to use sfc extension
+
+
+* Modify iptables rules to allow outgoing traffic on VNF VMs
+    ```
+    openstack@wabash:~$ sudo iptables -L | grep 192.168.2.11 -C 2
+    Chain neutron-openvswi-s99c19408-4 (1 references)
+    target     prot opt source               destination
+    RETURN     all  --  192.168.2.11         anywhere             MAC FA:16:3E:50:BD:23 /* Allow traffic from defined IP/MAC pairs. */
+    DROP       all  --  anywhere             anywhere             /* Drop traffic without an IP/MAC allow rule. */
+    
+    openstack@wabash:~$ sudo iptables -D neutron-openvswi-s99c19408-4 2; sudo iptables -A neutron-openvswi-s99c19408-4 -j RETURN
+    openstack@wabash:~$ sudo iptables -L | grep 192.168.2.11 -C 2
+    Chain neutron-openvswi-s99c19408-4 (1 references)
+    target     prot opt source               destination
+    RETURN     all  --  192.168.2.11         anywhere             MAC FA:16:3E:50:BD:23 /* Allow traffic from defined IP/MAC pairs. */
+    RETURN     all  --  anywhere             anywhere
+    
+    openstack@wabash:~$ sudo iptables -L | grep 192.168.2.12 -C 2
+    Chain neutron-openvswi-s8ee3cd1d-c (1 references)
+    target     prot opt source               destination
+    RETURN     all  --  192.168.2.12         anywhere             MAC FA:16:3E:96:8C:9F /* Allow traffic from defined IP/MAC pairs. */
+    DROP       all  --  anywhere             anywhere             /* Drop traffic without an IP/MAC allow rule. */
+    
+    openstack@wabash:~$ sudo iptables -D neutron-openvswi-s8ee3cd1d-c 2; sudo iptables -A neutron-openvswi-s8ee3cd1d-c -j RETURN
+    openstack@wabash:~$ sudo iptables -L | grep 192.168.2.12 -C 2
+    Chain neutron-openvswi-s8ee3cd1d-c (1 references)
+    target     prot opt source               destination
+    RETURN     all  --  192.168.2.12         anywhere             MAC FA:16:3E:96:8C:9F /* Allow traffic from defined IP/MAC pairs. */
+    RETURN     all  --  anywhere             anywhere
+    ```
+
+## On IDS VM:
+This section shows how to configure Suricata in inline mode.
+Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqueue 0 by iptables for Suricata to inspect.
+
+* Enable IP forwarding
+    ```
+    ubuntu@ids-1:~$ sudo sysctl -w net.ipv4.ip_forward=1
+    net.ipv4.ip_forward = 1
+    ```
+
+* Check routing infomation
+    ```
+    ubuntu@ids-1:~$ route -n
+    Kernel IP routing table
+    Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+    0.0.0.0         192.168.2.1     0.0.0.0         UG    0      0        0 eth2
+    169.254.169.254 192.168.1.1     255.255.255.255 UGH   0      0        0 eth0
+    192.168.1.0     0.0.0.0         255.255.255.0   U     0      0        0 eth0
+    192.168.2.0     0.0.0.0         255.255.255.0   U     0      0        0 eth2
+    192.168.2.0     0.0.0.0         255.255.255.0   U     0      0        0 eth1
+    ```
+
+* Configure iptables to use nfqueue for forward traffic
+    ```
+    ubuntu@ids-1:~$ sudo iptables -I FORWARD -i eth2 -j NFQUEUE
+    ubuntu@ids-1:~$ sudo iptables -vnL
+    Chain INPUT (policy ACCEPT 13 packets, 972 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+    
+    Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+        0     0 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
+    
+    Chain OUTPUT (policy ACCEPT 7 packets, 856 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+    ```
+
+* Run Suricata with inline mode
+    ```
+    ubuntu@ids-1:~$ sudo suricata -c /etc/suricata/suricata.yaml -q 0 -vv
+    29/6/2017 -- 01:33:26 - <Notice> - This is Suricata version 3.2.1 RELEASE
+    29/6/2017 -- 01:33:26 - <Info> - CPUs/cores online: 1
+    29/6/2017 -- 01:33:26 - <Info> - NFQ running in standard ACCEPT/DROP mode
+    29/6/2017 -- 01:33:26 - <Info> - Running in live mode, activating unix socket
+    29/6/2017 -- 01:33:30 - <Info> - 45 rule files processed. 19602 rules successfully loaded, 0 rules failed
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for tcp-packet
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for tcp-stream
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for udp-packet
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for other-ip
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_uri
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_request_line
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_client_body
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_response_line
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_header
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_header
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_raw_header
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_raw_header
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_method
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_cookie
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_cookie
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_raw_uri
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_user_agent
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_host
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_raw_host
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_stat_msg
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_stat_code
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for dns_query
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for tls_sni
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for tls_cert_issuer
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for tls_cert_subject
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for file_data
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for file_data
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_request_line
+    29/6/2017 -- 01:33:30 - <Perf> - using shared mpm ctx' for http_response_line
+    29/6/2017 -- 01:33:30 - <Info> - 19610 signatures processed. 1269 are IP-only rules, 6635 are inspecting packet payload, 14191 inspect application layer, 0 are decoder event only
+    29/6/2017 -- 01:33:30 - <Perf> - TCP toserver: 41 port groups, 34 unique SGH's, 7 copies
+    29/6/2017 -- 01:33:30 - <Perf> - TCP toclient: 21 port groups, 21 unique SGH's, 0 copies
+    29/6/2017 -- 01:33:30 - <Perf> - UDP toserver: 41 port groups, 30 unique SGH's, 11 copies
+    29/6/2017 -- 01:33:30 - <Perf> - UDP toclient: 21 port groups, 16 unique SGH's, 5 copies
+    29/6/2017 -- 01:33:30 - <Perf> - OTHER toserver: 254 proto groups, 3 unique SGH's, 251 copies
+    29/6/2017 -- 01:33:30 - <Perf> - OTHER toclient: 254 proto groups, 0 unique SGH's, 254 copies
+    29/6/2017 -- 01:33:31 - <Perf> - Unique rule groups: 104
+    29/6/2017 -- 01:33:31 - <Perf> - Builtin MPM "toserver TCP packet": 25
+    29/6/2017 -- 01:33:31 - <Perf> - Builtin MPM "toclient TCP packet": 20
+    29/6/2017 -- 01:33:31 - <Perf> - Builtin MPM "toserver TCP stream": 24
+    29/6/2017 -- 01:33:31 - <Perf> - Builtin MPM "toclient TCP stream": 21
+    29/6/2017 -- 01:33:31 - <Perf> - Builtin MPM "toserver UDP packet": 30
+    29/6/2017 -- 01:33:31 - <Perf> - Builtin MPM "toclient UDP packet": 15
+    29/6/2017 -- 01:33:31 - <Perf> - Builtin MPM "other IP packet": 2
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_uri": 8
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_client_body": 6
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_header": 7
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toclient http_header": 3
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_raw_header": 1
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toclient http_raw_header": 1
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_method": 4
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_cookie": 1
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toclient http_cookie": 2
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_raw_uri": 2
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toserver http_user_agent": 3
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toclient http_stat_code": 1
+    29/6/2017 -- 01:33:31 - <Perf> - AppLayer MPM "toclient file_data": 5
+    29/6/2017 -- 01:33:32 - <Info> - Threshold config parsed: 0 rule(s) found
+    29/6/2017 -- 01:33:32 - <Info> - eve-log output device (regular) initialized: eve.json
+    29/6/2017 -- 01:33:32 - <Info> - http-log output device (regular) initialized: http.log
+    29/6/2017 -- 01:33:32 - <Info> - tls-log output device (regular) initialized: tls.log
+    29/6/2017 -- 01:33:32 - <Info> - dns-log output device (regular) initialized: dns.log
+    29/6/2017 -- 01:33:32 - <Info> - dns-log output device (regular) initialized: dns.log
+    29/6/2017 -- 01:33:32 - <Info> - stats output device (regular) initialized: stats.log
+    29/6/2017 -- 01:33:32 - <Info> - binding this thread 0 to queue '0'
+    29/6/2017 -- 01:33:32 - <Info> - setting queue length to 4096
+    29/6/2017 -- 01:33:32 - <Info> - setting nfnl bufsize to 6144000
+    29/6/2017 -- 01:33:32 - <Info> - Running in live mode, activating unix socket
+    29/6/2017 -- 01:33:32 - <Info> - Using unix socket file '/var/run/suricata/suricata-command.socket'
+    29/6/2017 -- 01:33:32 - <Info> - Created socket directory /var/run/suricata/
+    29/6/2017 -- 01:33:32 - <Notice> - all 3 packet processing threads, 4 management threads initialized, engine started.
+    ^C29/6/2017 -- 01:33:49 - <Notice> - Signal Received.  Stopping engine.
+    29/6/2017 -- 01:33:49 - <Perf> - 0 new flows, 0 established flows were timed out, 0 flows in closed state
+    29/6/2017 -- 01:33:50 - <Info> - time elapsed 17.996s
+    29/6/2017 -- 01:33:51 - <Perf> - 0 flows processed
+    29/6/2017 -- 01:33:51 - <Notice> - (RX-Q0) Treated: Pkts 20, Bytes 1680, Errors 0
+    29/6/2017 -- 01:33:51 - <Notice> - (RX-Q0) Verdict: Accepted 20, Dropped 0, Replaced 0
+    29/6/2017 -- 01:33:51 - <Perf> - AutoFP - Total flow handler queues - 1
+    29/6/2017 -- 01:33:51 - <Info> - TLS logger logged 0 requests
+    29/6/2017 -- 01:33:51 - <Info> - DNS logger logged 0 transactions
+    29/6/2017 -- 01:33:51 - <Info> - DNS logger logged 0 transactions
+    29/6/2017 -- 01:33:51 - <Perf> - ippair memory usage: 398144 bytes, maximum: 16777216
+    29/6/2017 -- 01:33:51 - <Perf> - host memory usage: 398144 bytes, maximum: 33554432
+    29/6/2017 -- 01:33:51 - <Info> - cleaning up signature grouping structure... complete
+    ```
+
+* Double check iptables record
+    ```
+    ubuntu@ids-1:~$ sudo iptables -vnL
+    Chain INPUT (policy ACCEPT 221 packets, 13400 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+    
+    Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+       20  1680 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
+    
+    Chain OUTPUT (policy ACCEPT 218 packets, 32876 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+    ```
+
+
 ## <a name="ref"></a>Reference
 * Dell N series switch configuration manual, http://downloads.dell.com/Manuals/common/Networking_NxxUG_en-us.pdf
 * Dell Networking N2000 Series Support, http://www.dell.com/support/home/us/en/04/product-support/product/networking-n2000-series/manuals
@@ -496,4 +810,15 @@ Different from the official installation guide, this manual chooses Open vSwitch
 * Rescue broken Grub 2, https://help.ubuntu.com/community/Grub2/Installing#Reinstalling_GRUB_2
 * Configuring VXLAN in Openstack Neutron, https://www.cloudenablers.com/blog/configuring-vxlan-in-openstack-neutron/
 * OpenStack: Launching an instance on a specific compute host, http://www.googlinux.com/openstack-launching-an-instance-on-a-specific-compute-host/
+* networking-sfc documentation, https://docs.openstack.org/developer/networking-sfc/
+* networking-sfc developer document, https://docs.openstack.org/developer/networking-sfc/
+* networking-sfc configuration, https://docs.openstack.org/newton/networking-guide/config-sfc.html
+* networking-sfc source code, https://github.com/openstack/networking-sfc
+* How to Enable IP Forwarding in Linux, http://www.ducea.com/2006/08/01/how-to-enable-ip-forwarding-in-linux/
+* Changing IP Addresses and Routes, http://linux-ip.net/html/basic-changing.html
+* Firewall and NAT service in Linux, http://cn.linux.vbird.org/linux_server/0250simple_firewall.php#nat_what
+* iptables FORWARD and INPUT, https://stackoverflow.com/questions/12945233/iptables-forward-and-input
+* Iptables: Forwarding packets doesn't work, https://serverfault.com/questions/385251/iptables-forwarding-packets-doesnt-work
+* Setting up IPS/inline for Linux, http://suricata.readthedocs.io/en/latest/setting-up-ipsinline-for-linux.html
+* Snort IPS Inline Mode on Ubuntu, http://sublimerobots.com/2016/02/snort-ips-inline-mode-on-ubuntu/
 
