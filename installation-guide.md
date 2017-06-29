@@ -19,6 +19,7 @@ This manual explains how to install OpenStack Ocata on a cluster. It leverages t
 	* [Compute Node](#neutron-cn)
 * [Dashboard (Horizon)](#horizon)
 * [Create Experiment Setup](#exp)
+* [Create Service Function Chaining](#sfc)
 * [Reference](#ref)
 
 ## <a name="scenario"></a>Deployment Scenario
@@ -486,7 +487,7 @@ Different from the official installation guide, this manual chooses Open vSwitch
 
 ## <a name="sfc"></a>Create Service Function Chaining
 This sections talks about how to create sfc using OpenStack module networking-sfc.
-## On controller:
+### On controller:
 * Install networking-sfc module
 
 
@@ -616,7 +617,7 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     +------------------+---------------------------------------------+
     ```
 
-## On compute node:
+### On compute node:
 * Install networking-sfc module
 
 
@@ -652,7 +653,7 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     RETURN     all  --  anywhere             anywhere
     ```
 
-## On IDS VM:
+### On IDS VM:
 This section shows how to configure Suricata in inline mode.
 Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqueue 0 by iptables for Suricata to inspect.
 
