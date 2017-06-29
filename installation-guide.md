@@ -46,24 +46,24 @@ Figure 1. OpenStack deployment illustration
 3. Configure VLAN.
     * Enter priviledge mode:
         ```
-        sw-lwsnb132a> enable
-        sw-lwsnb132a# config
+        sw-dell> enable
+        sw-dell# config
         ```
     * Create VLAN with name ```openstack```:
         ```
-        sw-lwsnb132a(config)# vlan 100
-        sw-lwsnb132a(config-vlan100)# name openstack
-        sw-lwsnb132a(config-vlan100)# exit
-        sw-lwsnb132a(config)# vlan 100
-        sw-lwsnb132a(config-vlan100)# name openstack
-        sw-lwsnb132a(config-vlan100)# exit
+        sw-dell(config)# vlan 100
+        sw-dell(config-vlan100)# name openstack
+        sw-dell(config-vlan100)# exit
+        sw-dell(config)# vlan 100
+        sw-dell(config-vlan100)# name openstack
+        sw-dell(config-vlan100)# exit
         ```
         
     * Add port to VLAN (repeat to add all ports):
         ```
-        sw-lwsnb132a(config)#vlan 100
-        sw-lwsnb132a(config-vlan100)#name openstack
-        sw-lwsnb132a(config-vlan100)#exit
+        sw-dell(config)#vlan 100
+        sw-dell(config-vlan100)#name openstack
+        sw-dell(config-vlan100)#exit
         ```
 
 ### <a name="host-net"></a>Host Networking
@@ -75,12 +75,12 @@ Figure 1. OpenStack deployment illustration
 # External NIC for access and management
 auto eth0
 iface eth0 inet static
-    address 128.10.130.121
+    address EXTERNAL_IP
     netmask 255.255.255.0
-    network 128.10.130.0
-    broadcast 128.10.130.255
-    gateway 128.10.130.250
-    dns-nameservers 128.10.2.5 128.210.11.5
+    network EXTERNAL_IP_NET
+    broadcast EXTERNAL_IP_BR
+    gateway EXTERNAL_GW
+    dns-nameservers EXTERNAL_DNS
     dns-search cs.purdue.edu
 
 # Overlay NIC for instance overlay network
@@ -99,13 +99,13 @@ Note, the third NIC will be added to external OVS bridge to provide external con
 # External NIC for access and management
 auto enp32s0
 iface enp32s0 inet static
-    address 128.10.130.122
+    address EXTERNAL_IP
     netmask 255.255.255.0
-    network 128.10.130.0
-    broadcast 128.10.130.255
-    gateway 128.10.130.250
+    network EXTERNAL_IP_NET
+    broadcast EXTERNAL_IP_BR
+    gateway EXTERNAL_GW
     # dns-* options are implemented by the resolvconf package, if installed
-    dns-nameservers 128.10.2.5 128.210.11.5
+    dns-nameservers EXTERNAL_DNS
     dns-search cs.purdue.edu
 
 # Overlay NIC for instance overlay network
@@ -126,9 +126,9 @@ iface enp16s0 inet manual
 * Edit ```/etc/hosts``` to provide hostname resolution in management network on each node. In our deployment, there is a DNS server to resolve hostnames. So this step is not necessary.
     ```
     127.0.0.1        localhost
-    128.10.130.121   cap01    # controller node
-    128.10.130.122   cap02    # network node
-    128.10.130.67    wabash   # compute node
+    EXTERNAL_IP_1    cap01    # controller node
+    EXTERNAL_IP_2    cap02    # network node
+    EXTERNAL_IP_3    wabash   # compute node
     ```
 
 ### <a name="other-config"></a>Other Configurations
@@ -447,16 +447,16 @@ Different from the official installation guide, this manual chooses Open vSwitch
             --provider-network-type flat provider
 
         $ openstack subnet create --network provider \
-            --allocation-pool start=128.10.130.204,end=128.10.130.210 \
-            --dns-nameserver 128.10.2.5 --gateway 128.10.130.250 \
-            --subnet-range 128.10.130.0/24 provider
+            --allocation-pool start=EXTERNAL_IP_START,end=EXTERNAL_IP_END \
+            --dns-nameserver EXTERNAL_DNS --gateway EXTERNAL_GW \
+            --subnet-range EXTERNAL_IP_NET provider
         ```
     2. Create demo network and subnet as a regular user.
         ```
         $ . envi-openrc
         $ openstack network create demo-net
         $ openstack subnet create --network demo-net \
-            --dns-nameserver 128.10.2.5 --gateway 192.168.1.1 \
+            --dns-nameserver EXTERNAL_DNS --gateway 192.168.1.1 \
             --subnet-range 192.168.1.0/24 demo-subnet
         ```
     3. Create a router and attach demo network to it and set gateway.
