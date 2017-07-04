@@ -502,6 +502,7 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 
 * Configure Neutron and ML2 to use sfc module
     1. Edit ```/etc/neutron/neutron.conf``` to add ```service_plugin```, ```[ovs]``` and ```[flowclassifier]``` sections.
+    
         ```
         [DEFAULT]
         ...
@@ -512,10 +513,12 @@ This sections talks about how to create sfc using OpenStack module networking-sf
         drivers = ovs
         ```
     2. Restart neutron-server service.
+    
         ```
         # service neutron-server restart
         ```
     3. Sync up database.
+    
         ```
 	# su -s /bin/sh -c "neutron-db-manage --subproject networking-sfc branches" neutron
 	```
