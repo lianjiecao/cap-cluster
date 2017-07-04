@@ -490,10 +490,31 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 ### On controller:
 * Install networking-sfc module
 
+    Install the corresponding version of networking-sfc:
+    * Ocata: latest 4.0.x version
+    * Newton: latest 3.0.x version
+    * Mitaka: latest 2.0.x version
+
+    Here we use 4.0 version:
+    ```
+    pip install -c https://git.openstack.org/cgit/openstack/requirements/plain/upper-constraints.txt?h=stable/ocata networking-sfc==4.0.0
+    ```
 
 * Configure Neutron and ML2 to use sfc module
-
-
+    1. Edit ```/etc/neutron/neutron.conf``` to add ```service_plugin```, ```[ovs]``` and ```[flowclassifier]``` sections.
+        ```
+        [DEFAULT]
+        ...
+        service_plugins=router,networking_sfc.services.flowclassifier.plugin.FlowClassifierPlugin,networking_sfc.services.sfc.plugin.SfcPlugin
+        [sfc]
+        drivers = ovs
+        [flowclassifier]
+        drivers = ovs
+        ```
+    2. Restart neutron-server service.
+        ```
+        sudo service neutron-server restart
+        ```
 
 * Create flow classifier, port pair for each VNF VM, port pair groups that connects multiple VNF VMs and port chain that connects multiple port pair groups
     ```
@@ -620,9 +641,22 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 ### On compute node:
 * Install networking-sfc module
 
+    Repeat the same process to install ```networking-sfc```.
+    ```
+    pip install -c https://git.openstack.org/cgit/openstack/requirements/plain/upper-constraints.txt?h=stable/ocata networking-sfc==4.0.0
+    ```
 
 * Configure neutron-openvswitch agent to use sfc extension
-
+    1. Edit ```/etc/neutron/plugins/ml2/openvswitch_agent.ini``` to add ```extensions```.
+        ```
+        [agent]
+        ...
+        extensions = sfc
+        ```
+    2. Restart openvswitch agent.
+        ```
+        sudo service neutron-openvswitch-agent restart
+	```
 
 * Modify iptables rules to allow outgoing traffic on VNF VMs
     ```
