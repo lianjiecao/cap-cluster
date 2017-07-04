@@ -520,8 +520,8 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     3. Sync up database.
     
         ```
-	# su -s /bin/sh -c "neutron-db-manage --subproject networking-sfc branches" neutron
-	```
+        # su -s /bin/sh -c "neutron-db-manage --subproject networking-sfc branches" neutron
+        ```
     
 
 * Create flow classifier, port pair for each VNF VM, port pair groups that connects multiple VNF VMs and port chain that connects multiple port pair groups
