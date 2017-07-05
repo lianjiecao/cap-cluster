@@ -696,10 +696,15 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 This section shows how to configure Suricata in inline mode.
 Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqueue 0 by iptables for Suricata to inspect.
 
-* Enable IP forwarding
+* Enable IP forwarding on the fly
     ```
     ubuntu@ids-1:~$ sudo sysctl -w net.ipv4.ip_forward=1
     net.ipv4.ip_forward = 1
+    ```
+    or permanently by editing ```/etc/sysctl.conf```
+    ```
+    net.ipv4.ip_forward = 1
+    $ sudo sysctl -p /etc/sysctl.conf
     ```
 
 * Check routing infomation
@@ -727,6 +732,21 @@ Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqu
     
     Chain OUTPUT (policy ACCEPT 7 packets, 856 bytes)
      pkts bytes target     prot opt in     out     source               destination
+    ```
+    and make the change permanently:
+    ```
+    $ sudo iptables -vnL
+    Chain INPUT (policy ACCEPT 711 packets, 66950 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+
+    Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+       25  2100 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
+
+    Chain OUTPUT (policy ACCEPT 815 packets, 105K bytes)
+     pkts bytes target     prot opt in     out     source               destination
+     
+    $ sudo apt install iptables-persistent
     ```
 
 * Run Suricata with inline mode
