@@ -490,10 +490,36 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 ### On controller:
 * Install networking-sfc module
 
+    Install the corresponding version of networking-sfc:
+    * Ocata: latest 4.0.x version
+    * Newton: latest 3.0.x version
+    * Mitaka: latest 2.0.x version
+
+    Here we use 4.0 version:
+    ```
+    pip install -c https://git.openstack.org/cgit/openstack/requirements/plain/upper-constraints.txt?h=stable/ocata networking-sfc==4.0.0
+    ```
 
 * Configure Neutron and ML2 to use sfc module
-
-
+    1. Edit ```/etc/neutron/neutron.conf``` to add ```service_plugin```, ```[ovs]``` and ```[flowclassifier]``` sections.
+        ```
+        [DEFAULT]
+        ...
+        service_plugins=router,networking_sfc.services.flowclassifier.plugin.FlowClassifierPlugin,networking_sfc.services.sfc.plugin.SfcPlugin
+        [sfc]
+        drivers = ovs
+        [flowclassifier]
+        drivers = ovs
+        ```
+    2. Restart neutron-server service.
+        ```
+        # service neutron-server restart
+        ```
+    3. Sync up database.
+        ```
+        # su -s /bin/sh -c "neutron-db-manage --subproject networking-sfc branches" neutron
+        ```
+    
 
 * Create flow classifier, port pair for each VNF VM, port pair groups that connects multiple VNF VMs and port chain that connects multiple port pair groups
     ```
@@ -634,9 +660,22 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 ### On compute node:
 * Install networking-sfc module
 
+    Repeat the same process to install ```networking-sfc```.
+    ```
+    pip install -c https://git.openstack.org/cgit/openstack/requirements/plain/upper-constraints.txt?h=stable/ocata networking-sfc==4.0.0
+    ```
 
 * Configure neutron-openvswitch agent to use sfc extension
-
+    1. Edit ```/etc/neutron/plugins/ml2/openvswitch_agent.ini``` to add ```extensions```.
+        ```
+        [agent]
+        ...
+        extensions = sfc
+        ```
+    2. Restart openvswitch agent.
+        ```
+        # service neutron-openvswitch-agent restart
+	```
 
 * Modify iptables rules to allow outgoing traffic on VNF VMs
     ```
@@ -671,10 +710,15 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 This section shows how to configure Suricata in inline mode.
 Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqueue 0 by iptables for Suricata to inspect.
 
-* Enable IP forwarding
+* Enable IP forwarding on the fly
     ```
     ubuntu@ids-1:~$ sudo sysctl -w net.ipv4.ip_forward=1
     net.ipv4.ip_forward = 1
+    ```
+    or permanently by editing ```/etc/sysctl.conf```
+    ```
+    net.ipv4.ip_forward = 1
+    $ sudo sysctl -p /etc/sysctl.conf
     ```
 
 * Check routing infomation
@@ -702,6 +746,21 @@ Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqu
     
     Chain OUTPUT (policy ACCEPT 7 packets, 856 bytes)
      pkts bytes target     prot opt in     out     source               destination
+    ```
+    and make the change permanently:
+    ```
+    $ sudo iptables -vnL
+    Chain INPUT (policy ACCEPT 711 packets, 66950 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+
+    Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+       25  2100 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
+
+    Chain OUTPUT (policy ACCEPT 815 packets, 105K bytes)
+     pkts bytes target     prot opt in     out     source               destination
+     
+    $ sudo apt install iptables-persistent
     ```
 
 * Run Suricata with inline mode
