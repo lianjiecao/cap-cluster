@@ -497,7 +497,11 @@ This sections talks about how to create sfc using OpenStack module networking-sf
 
 * Create flow classifier, port pair for each VNF VM, port pair groups that connects multiple VNF VMs and port chain that connects multiple port pair groups
     ```
-    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-snd-1 to ids-rcv-1" --ethertype IPv4 --source-ip-prefix 192.168.2.21/32 --destination-ip-prefix 192.168.2.31/32 --logical-source-port ids-snd-1-ids-net --logical-destination-port ids-rcv-1-ids-net fc_ids-snd-1_to_ids-rcv-1
+    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-snd-1 to ids-rcv-1" \ 
+        --ethertype IPv4 --source-ip-prefix 192.168.2.21/32 --destination-ip-prefix 192.168.2.31/32 \ 
+        --logical-source-port ids-snd-1-ids-net --logical-destination-port ids-rcv-1-ids-net \ 
+        fc_ids-snd-1_to_ids-rcv-1
+
     neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
     Created a new flow_classifier:
     +----------------------------+--------------------------------------+
@@ -521,7 +525,11 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     | tenant_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
     +----------------------------+--------------------------------------+
     
-    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-rcv-1 to ids-snd-1" --ethertype IPv4 --source-ip-prefix 192.168.2.31/32 --destination-ip-prefix 192.168.2.21/32 --logical-source-port ids-rcv-1-ids-net --logical-destination-port ids-snd-1-ids-net fc_ids-rcv-1_to_ids-snd-1
+    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-rcv-1 to ids-snd-1" \ 
+        --ethertype IPv4 --source-ip-prefix 192.168.2.31/32 --destination-ip-prefix 192.168.2.21/32 \ 
+        --logical-source-port ids-rcv-1-ids-net --logical-destination-port ids-snd-1-ids-net \ 
+        fc_ids-rcv-1_to_ids-snd-1
+
     neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
     Created a new flow_classifier:
     +----------------------------+--------------------------------------+
@@ -546,6 +554,7 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     +----------------------------+--------------------------------------+
     
     openstack@cap01:~$ neutron flow-classifier-list
+
     neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
     +--------------------------------------+---------------------------+-----------------------------------------------------------------+
     | id                                   | name                      | summary                                                         |
@@ -564,7 +573,9 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     |                                      |                           | l7_parameters: {}                                               |
     +--------------------------------------+---------------------------+-----------------------------------------------------------------+
     
-    openstack@cap01:~$ neutron port-pair-create --description "ids-1" --ingress ids-1-ids-net-1 --egress ids-1-ids-net pp_ids-1 ### ingress:eth2, egress:eth1
+    openstack@cap01:~$ neutron port-pair-create --description "ids-1" --ingress ids-1-ids-net-1 \ 
+        --egress ids-1-ids-net pp_ids-1 ### ingress:eth2, egress:eth1
+
     neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
     Created a new port_pair:
     +-----------------------------+--------------------------------------+
@@ -582,6 +593,7 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     
     
     openstack@cap01:~$ neutron port-pair-group-create --port-pair pp_ids-1 ppg_ids-1
+
     neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
     Created a new port_pair_group:
     +----------------------------+--------------------------------------+
@@ -598,7 +610,9 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     +----------------------------+--------------------------------------+
     
     
-    openstack@cap01:~$ neutron port-chain-create --port-pair-group ppg_ids-1 --flow-classifier fc_ids-snd-1_to_ids-rcv-1 --flow-classifier fc_ids-rcv-1_to_ids-snd-1 pc_ids-snd-1_ids-rcv-1
+    openstack@cap01:~$ neutron port-chain-create --port-pair-group ppg_ids-1 --flow-classifier fc_ids-snd-1_to_ids-rcv-1 \ 
+        --flow-classifier fc_ids-rcv-1_to_ids-snd-1 pc_ids-snd-1_ids-rcv-1
+
     neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
     Created a new port_chain:
     +------------------+---------------------------------------------+
