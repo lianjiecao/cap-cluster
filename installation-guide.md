@@ -966,6 +966,7 @@ Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqu
 * Configuring VXLAN in Openstack Neutron, https://www.cloudenablers.com/blog/configuring-vxlan-in-openstack-neutron/
 * OpenStack: Launching an instance on a specific compute host, http://www.googlinux.com/openstack-launching-an-instance-on-a-specific-compute-host/
 * networking-sfc API 5.0, https://docs.openstack.org/networking-sfc/latest/contributor/api.html
+* networking-sfc commands, https://docs.openstack.org/python-neutronclient/latest/cli/osc/v2/networking-sfc.html
 * networking-sfc documentation, https://docs.openstack.org/developer/networking-sfc/
 * networking-sfc developer document, https://docs.openstack.org/developer/networking-sfc/
 * networking-sfc configuration, https://docs.openstack.org/newton/networking-guide/config-sfc.html
