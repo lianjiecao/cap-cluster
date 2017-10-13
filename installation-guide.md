@@ -12,11 +12,11 @@ This manual explains how to install OpenStack Ocata on a cluster. It leverages t
 * [Image Service (Glance)](#glance)
 * [Compute Service (Nova)](#nova)
     * [Controller Node](#nova-ctl)
-	* [Compute Node](#nova-cn)
+    * [Compute Node](#nova-cn)
 * [Networking Service (Neutron)](#neutron)
-	* [Controller Node](#neutron-ctl)
-	* [Network Node](#neutron-nn)
-	* [Compute Node](#neutron-cn)
+    * [Controller Node](#neutron-ctl)
+    * [Network Node](#neutron-nn)
+    * [Compute Node](#neutron-cn)
 * [Dashboard (Horizon)](#horizon)
 * [Create Experiment Setup](#exp)
 * [Create Service Function Chaining](#sfc)
@@ -199,8 +199,8 @@ Different from the official installation guide, this manual chooses Open vSwitch
 
 1. Edit ```/etc/neutron/neutron.conf``` to enable database connection, ```RabbitMQ``` access, ```Keystone``` authentication, ```nova``` interaction, and ```ml2``` plugin.
 
-    *Click [<span style="text-decoration:underline">here</span>](https://raw.githubusercontent.com/lianjiecao/cap-cluster/master/ctl-neutron.conf) for a example configuration file.
-    
+    * Click [<span style="text-decoration:underline">here</span>](https://raw.githubusercontent.com/lianjiecao/cap-cluster/master/ctl-neutron.conf) for a example configuration file.
+
 2. Edit ```/etc/neutron/plugins/ml2/ml2_conf.ini``` to configure type drivers (_e.g._, flat, vlan, vxlan and gre) and machanism drivers (_e.g._, linuxbridge, openvswitch and l2population). In this manual, openvswitch+vxlan is chosen for Neutron.
 
     * Configure type drivers and machanism drivers in ```[ml2]``` section.
@@ -281,8 +281,8 @@ Different from the official installation guide, this manual chooses Open vSwitch
         enable_security_group = true
         enable_ipset = true
         ```
-	* Create OVS bridge with the same name in ```bridge_mappings = provider:br-provider``` and add a external NIC to the bridge.
-    	```
+    * Create OVS bridge with the same name in ```bridge_mappings = provider:br-provider``` and add a external NIC to the bridge.
+        ```
         # ovs-vsctl add-br br-provider
         # ovs-vsctl add-port br-provider enp16s0
         ```
@@ -437,6 +437,24 @@ Different from the official installation guide, this manual chooses Open vSwitch
     ```
 
 ## <a name="exp"></a>Create Experiment Environment
+In this example we create three network (demo-net, ids-net-1 and ids-net-2), one VNF instance (ids-1), seven workload instances (ids-snd-1, ids-snd-2, ids-snd-3, ids-snd-4, ids-snd-5, ids-rcv-1, and ids-rcv-2). 
+
+|   Instances  | demo-net | ids-net-1 | ids-net-1 |
+|:------------:|:--------:|:---------:|:---------:|
+|     ids-1    |   eth0   |    eth1   |    eth2   |
+|   ids-snd-1  |   eth0   |    eth1   |           |
+|   ids-snd-2  |   eth0   |    eth1   |           |
+|   ids-snd-3  |   eth0   |    eth1   |           |
+|   ids-snd-4  |   eth0   |    eth2   |    eth2   |
+|   ids-snd-5  |   eth0   |    eth2   |    eth2   |
+|   ids-rcv-1  |   eth0   |    eth1   |           |
+|   ids-rcv-2  |   eth0   |    eth1   |    eth2   |
+
+demo-net is used as controll network.
+Two SFC chains to create: 
+
+1. [eth1@ids-snd-1,eth1@ids-snd-2,eth1@ids-snd-3] <=> [eth1@ids-1] <=> [eth1@ids-rcv-1,eth1@ids-rcv-2]
+2. [eth2@ids-snd-4,eth2@ids-snd-5] <=> [eth2@ids-1] <=> [eth2@ids-rcv-2]
 
 * Create virtual networks
     1. Create provider network and subnet for external networking as administrator. This network is shared with other users.
@@ -465,24 +483,35 @@ Different from the official installation guide, this manual chooses Open vSwitch
         $ neutron router-interface-add envi-router demo-subnet
         $ neutron router-gateway-set envi-router provider
         ```
-    4. Repeat step 2 and 3 to create ids network and subnet and attach it to the router.
+    4. Repeat step 2 and 3 to create ids-net-1 and ids-net-2 network and subnet and attach them to the router.
+        ```
+        openstack@cap01:~$ openstack network list
+        +--------------------------------------+-----------+--------------------------------------+
+        | ID                                   | Name      | Subnets                              |
+        +--------------------------------------+-----------+--------------------------------------+
+        | 00052348-9c38-47f1-aa12-4caa4b13943e | ids-net-2 | afeb5442-a7a0-466b-828a-d50b2e39f624 |
+        | 096021e0-b143-4a84-93c8-0641ca29affe | provider  | d3ff5ff5-d9b9-43da-a97d-0465b905f817 |
+        | 33d92c2f-e2a7-43d2-a4d1-c2213bf8804b | ids-net-1 | e44a2bd1-d3d9-41b7-a434-a34d42386e8f |
+        | 3b05f9e8-4ad1-4c2b-91b4-ead4828abdb9 | demo-net  | 5d77c479-eb1b-42ec-b990-15bd0f68fadb |
+        +--------------------------------------+-----------+--------------------------------------+
+        ```
     
 * Launch instance with two NICs on demo network and ids network.
     1. Create image for ids instance.
         ```
         $ openstack image create "ids-1" --file hdd/images/ids-1-snapshot.raw --disk-format raw --container-format bare
         ```
-    2. Create ports with fixed IPs on demo network and ids network.
+    2. Create ports with fixed IPs on demo network and ids network for ids-1 and repeat for all instances.
         ```
-        $ openstack port create --network demo-net --fixed-ip subnet=demo-subnet,ip-address=192.168.1.11 ids-1-demo-net
-        $ openstack port create --network ids-net --fixed-ip subnet=ids-subnet,ip-address=192.168.2.11 ids-1-ids-net
+        $ openstack port create --network demo-net --fixed-ip subnet=demo-subnet,ip-address=192.168.1.11 ids-1_demo-net
+        $ openstack port create --network ids-net-1 --fixed-ip subnet=ids-subnet-1,ip-address=192.168.2.11 ids-1_ids-net-1
+        $ openstack port create --network ids-net-2 --fixed-ip subnet=ids-subnet-2,ip-address=192.168.3.11 ids-1_ids-net-2
         ```
     3. Launch instance with created image and ports.
         ```
-        $ openstack server create --flavor m1.small --image ids-1 --security-group default \
-          --nic port-id=91222c71-eb50-4e13-9e07-e5c5b8627e93 
-          --nic port-id=99c19408-41a9-4052-88f6-0bcb32bf3eac 
-          --availability-zone nova:wabash ids-1
+        openstack@cap01:~$ openstack server create --flavor m1.small --image ids-1 --security-group default \
+            --nic port-id=06442390-e320-42d2-a0c5-29c8662e1b0c --nic port-id=f5484b38-0b14-4769-adb4-cd594cf1373c \
+            --nic port-id=ea6e56cf-9a38-46db-891e-b12c09423e09 --key-name nfv-key --availability-zone nova:wabash ids-1
         ```
 
 ## <a name="sfc"></a>Create Service Function Chaining
@@ -521,15 +550,12 @@ This sections talks about how to create sfc using OpenStack module networking-sf
         ```
     
 
-* Create flow classifier, port pair for each VNF VM, port pair groups that connects multiple VNF VMs and port chain that connects multiple port pair groups
+* Create flow classifier, port pair, port pair groups and port chains that connects multiple VNF VMs.
     ```
-    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-snd-1 to ids-rcv-1" \ 
-        --ethertype IPv4 --source-ip-prefix 192.168.2.21/32 --destination-ip-prefix 192.168.2.31/32 \ 
-        --logical-source-port ids-snd-1-ids-net --logical-destination-port ids-rcv-1-ids-net \ 
-        fc_ids-snd-1_to_ids-rcv-1
-
-    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
-    Created a new flow_classifier:
+    openstack@cap01:~$ openstack sfc flow classifier create --description "Traffic from ids-snd-1@ids-net-1 to ids-rcv-1@ids-net-1" \
+        --ethertype IPv4 --source-ip-prefix 192.168.2.21/32 --destination-ip-prefix 192.168.2.31/32 \
+        --logical-source-port ids-snd-1_ids-net-1 --logical-destination-port ids-rcv-1_ids-net-1 \
+        fc_ids-snd-1_to_ids-rcv-1_ids-net-1
     +----------------------------+--------------------------------------+
     | Field                      | Value                                |
     +----------------------------+--------------------------------------+
@@ -550,14 +576,11 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     | source_port_range_min      |                                      |
     | tenant_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
     +----------------------------+--------------------------------------+
-    
-    openstack@cap01:~$ neutron flow-classifier-create --description "Traffic from ids-rcv-1 to ids-snd-1" \ 
-        --ethertype IPv4 --source-ip-prefix 192.168.2.31/32 --destination-ip-prefix 192.168.2.21/32 \ 
-        --logical-source-port ids-rcv-1-ids-net --logical-destination-port ids-snd-1-ids-net \ 
-        fc_ids-rcv-1_to_ids-snd-1
 
-    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
-    Created a new flow_classifier:
+    openstack@cap01:~$ openstack sfc flow classifier create --description "Traffic from ids-rcv-1@ids-net-1 to ids-snd-1@ids-net-1" \
+        --ethertype IPv4 --source-ip-prefix 192.168.2.31/32 --destination-ip-prefix 192.168.2.21/32 \
+        --logical-source-port ids-rcv-1-ids-net --logical-destination-port ids-snd-1-ids-net \
+        fc_ids-rcv-1_to_ids-snd-1_ids-net-1
     +----------------------------+--------------------------------------+
     | Field                      | Value                                |
     +----------------------------+--------------------------------------+
@@ -579,82 +602,145 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     | tenant_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
     +----------------------------+--------------------------------------+
     
-    openstack@cap01:~$ neutron flow-classifier-list
+    [Repeat to create more flow classifiers ...]
 
-    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
-    +--------------------------------------+---------------------------+-----------------------------------------------------------------+
-    | id                                   | name                      | summary                                                         |
-    +--------------------------------------+---------------------------+-----------------------------------------------------------------+
-    | 3f80c0cb-ef0d-4572-8cca-452ddb7926ec | fc_ids-rcv-1_to_ids-snd-1 | protocol: any,                                                  |
-    |                                      |                           | source[port]: 192.168.2.31/32[any:any],                         |
-    |                                      |                           | destination[port]: 192.168.2.21/32[any:any],                    |
-    |                                      |                           | neutron_source_port: 53ef0cf4-a640-4a03-af65-2f21a51ad18b,      |
-    |                                      |                           | neutron_destination_port: 6bad8ea1-87c8-4157-b7cf-ca245113d343, |
-    |                                      |                           | l7_parameters: {}                                               |
-    | 6f75728c-5532-495d-8db9-a09866881b4e | fc_ids-snd-1_to_ids-rcv-1 | protocol: any,                                                  |
-    |                                      |                           | source[port]: 192.168.2.21/32[any:any],                         |
-    |                                      |                           | destination[port]: 192.168.2.31/32[any:any],                    |
-    |                                      |                           | neutron_source_port: 6bad8ea1-87c8-4157-b7cf-ca245113d343,      |
-    |                                      |                           | neutron_destination_port: 53ef0cf4-a640-4a03-af65-2f21a51ad18b, |
-    |                                      |                           | l7_parameters: {}                                               |
-    +--------------------------------------+---------------------------+-----------------------------------------------------------------+
-    
-    openstack@cap01:~$ neutron port-pair-create --description "ids-1" --ingress ids-1-ids-net-1 \ 
-        --egress ids-1-ids-net pp_ids-1 ### ingress:eth2, egress:eth1
+    openstack@cap01:~/cap-cluster$ openstack sfc flow classifier list
+    +--------------------------------------+-------------------------------------+----------+-----------------+-----------------+--------------------------------------+--------------------------------------+
+    | ID                                   | Name                                | Protocol | Source-IP       | Destination-IP  | Logical-Source-Port                  | Logical-Destination-Port             |
+    +--------------------------------------+-------------------------------------+----------+-----------------+-----------------+--------------------------------------+--------------------------------------+
+    | 1ef1f76f-46ca-43ea-80c3-84b961368d1f | fc_ids-snd-3_to_ids-rcv-2_ids-net-1 | None     | 192.168.2.23/32 | 192.168.2.32/32 | e0dac140-abcb-47d7-8945-2eeb1ec036ff | e06e403c-0fbb-457c-87a4-02030c5df5d4 |
+    | 3f80c0cb-ef0d-4572-8cca-452ddb7926ec | fc_ids-rcv-1_to_ids-snd-1_ids-net-1 | None     | 192.168.2.31/32 | 192.168.2.21/32 | 53ef0cf4-a640-4a03-af65-2f21a51ad18b | 6bad8ea1-87c8-4157-b7cf-ca245113d343 |
+    | 6f75728c-5532-495d-8db9-a09866881b4e | fc_ids-snd-1_to_ids-rcv-1_ids-net-1 | None     | 192.168.2.21/32 | 192.168.2.31/32 | 6bad8ea1-87c8-4157-b7cf-ca245113d343 | 53ef0cf4-a640-4a03-af65-2f21a51ad18b |
+    | 98801a52-dcff-4d7c-816b-96567981bdff | fc_ids-rcv-2_to_ids-snd-5_ids-net-2 | None     | 192.168.3.32/32 | 192.168.3.25/32 | 9f248c8a-c675-426c-b3aa-14f3acfc011f | 911f4d96-3f69-46cb-9bf1-ab55ed8dba76 |
+    | a454e7ed-1885-4a93-af86-0ed31c0bf915 | fc_ids-snd-2_to_ids-rcv-2_ids-net-1 | None     | 192.168.2.22/32 | 192.168.2.32/32 | 427eb3c6-98f9-43e9-bde0-20b780e6783f | e06e403c-0fbb-457c-87a4-02030c5df5d4 |
+    | d8bf0d8d-1788-445e-9606-9aaca6b74c9e | fc_ids-rcv-2_to_ids-snd-4_ids-net-2 | None     | 192.168.3.32/32 | 192.168.3.24/32 | 9f248c8a-c675-426c-b3aa-14f3acfc011f | fbbc7cf2-00f4-410d-b0f2-b255735e29c6 |
+    | d8e86849-6d94-4b64-9a1e-6178563d5e96 | fc_ids-rcv-2_to_ids-snd-2_ids-net-1 | None     | 192.168.2.32/32 | 192.168.2.22/32 | e06e403c-0fbb-457c-87a4-02030c5df5d4 | 427eb3c6-98f9-43e9-bde0-20b780e6783f |
+    | e50d8c54-cbcc-47b2-9a98-7e97155b53bb | fc_ids-snd-5_to_ids-rcv-2_ids-net-2 | None     | 192.168.3.25/32 | 192.168.3.32/32 | 911f4d96-3f69-46cb-9bf1-ab55ed8dba76 | 9f248c8a-c675-426c-b3aa-14f3acfc011f |
+    | f44c89d3-0886-45c3-94ab-91b380cebef5 | fc_ids-snd-4_to_ids-rcv-2_ids-net-2 | None     | 192.168.3.24/32 | 192.168.3.32/32 | fbbc7cf2-00f4-410d-b0f2-b255735e29c6 | 9f248c8a-c675-426c-b3aa-14f3acfc011f |
+    | f4e2f64e-09de-44f6-ae5d-9137bc62727d | fc_ids-rcv-2_to_ids-snd-3_ids-net-1 | None     | 192.168.2.32/32 | 192.168.2.23/32 | e06e403c-0fbb-457c-87a4-02030c5df5d4 | e0dac140-abcb-47d7-8945-2eeb1ec036ff |
+    +--------------------------------------+-------------------------------------+----------+-----------------+-----------------+--------------------------------------+--------------------------------------+
 
-    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
-    Created a new port_pair:
+    openstack@cap01:~$ openstack sfc port pair create --description "ids-1@ids-net-1" --ingress ids-1_ids-net-1 --egress ids-1_ids-net-1 pp_ids-1_ids-net-1
     +-----------------------------+--------------------------------------+
     | Field                       | Value                                |
     +-----------------------------+--------------------------------------+
-    | description                 | ids-1                                |
-    | egress                      | 99c19408-41a9-4052-88f6-0bcb32bf3eac |
-    | id                          | 1eeecf12-e2cd-46c3-a182-0f0da491f173 |
-    | ingress                     | 8ee3cd1d-c48e-4dd7-9732-9ec764153ef6 |
-    | name                        | pp_ids-1                             |
+    | description                 | ids-1@ids-net-1                      |
+    | egress                      | 2d2eae7a-861c-4215-a77a-fd0abf8a19a1 |
+    | id                          | 2ed66e91-326c-4fda-80da-0498caa2d298 |
+    | ingress                     | 2d2eae7a-861c-4215-a77a-fd0abf8a19a1 |
+    | name                        | pp_ids-2_ids-net-1                   |
     | project_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
-    | service_function_parameters | {"weight": 1, "correlation": null}   |
-    | tenant_id                   | 9b1a8bb7e17c492a9782a6678de94067     |
+    | service_function_parameters | {u'weight': 1, u'correlation': None} |
     +-----------------------------+--------------------------------------+
-    
-    
-    openstack@cap01:~$ neutron port-pair-group-create --port-pair pp_ids-1 ppg_ids-1
 
-    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
-    Created a new port_pair_group:
-    +----------------------------+--------------------------------------+
-    | Field                      | Value                                |
-    +----------------------------+--------------------------------------+
-    | description                |                                      |
-    | group_id                   | 1                                    |
-    | id                         | 8c02dc85-d25b-40a2-a08c-d4f723f67f35 |
-    | name                       | ppg_ids-1                            |
-    | port_pair_group_parameters | {"lb_fields": []}                    |
-    | port_pairs                 | 1eeecf12-e2cd-46c3-a182-0f0da491f173 |
-    | project_id                 | 9b1a8bb7e17c492a9782a6678de94067     |
-    | tenant_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
-    +----------------------------+--------------------------------------+
-    
-    
-    openstack@cap01:~$ neutron port-chain-create --port-pair-group ppg_ids-1 --flow-classifier fc_ids-snd-1_to_ids-rcv-1 \ 
-        --flow-classifier fc_ids-rcv-1_to_ids-snd-1 pc_ids-snd-1_ids-rcv-1
+    openstack@cap01:~$ openstack sfc port pair create --description "ids-1@ids-net-2" --ingress ids-1_ids-net-2 --egress ids-1_ids-net-2 pp_ids-1_ids-net-2
+    +-----------------------------+--------------------------------------+
+    | Field                       | Value                                |
+    +-----------------------------+--------------------------------------+
+    | description                 | ids-1@ids-net-2                      |
+    | egress                      | edaa470b-bbbd-47e7-9f52-388fac91f336 |
+    | id                          | 5cd7c5a3-09eb-4bc9-a28e-4568a5c92bf2 |
+    | ingress                     | edaa470b-bbbd-47e7-9f52-388fac91f336 |
+    | name                        | pp_ids-2_ids-net-2                   |
+    | project_id                  | 9b1a8bb7e17c492a9782a6678de94067     |
+    | service_function_parameters | {u'weight': 1, u'correlation': None} |
+    +-----------------------------+--------------------------------------+
 
-    neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
-    Created a new port_chain:
-    +------------------+---------------------------------------------+
-    | Field            | Value                                       |
-    +------------------+---------------------------------------------+
-    | chain_id         | 1                                           |
-    | chain_parameters | {"symmetric": false, "correlation": "mpls"} |
-    | description      |                                             |
-    | flow_classifiers | 6f75728c-5532-495d-8db9-a09866881b4e        |
-    |                  | 3f80c0cb-ef0d-4572-8cca-452ddb7926ec        |
-    | id               | 3108422d-15ad-41ae-90cf-5124dc31cce7        |
-    | name             | pc_ids-snd-1_ids-rcv-1                      |
-    | port_pair_groups | 8c02dc85-d25b-40a2-a08c-d4f723f67f35        |
-    | project_id       | 9b1a8bb7e17c492a9782a6678de94067            |
-    | tenant_id        | 9b1a8bb7e17c492a9782a6678de94067            |
-    +------------------+---------------------------------------------+
+    [Repeat to create port pairs for all VNF instances ...]
+
+    openstack@cap01:~$ openstack sfc port pair list
+    +--------------------------------------+--------------------+--------------------------------------+--------------------------------------+
+    | ID                                   | Name               | Ingress Logical Port                 | Egress Logical Port                  |
+    +--------------------------------------+--------------------+--------------------------------------+--------------------------------------+
+    | 17809479-dd8e-4de3-91dd-2efb60310719 | pp_ids-1_ids-net-1 | f5484b38-0b14-4769-adb4-cd594cf1373c | f5484b38-0b14-4769-adb4-cd594cf1373c |
+    | 2c8e2ed8-ac9c-4ca2-a9fd-6e5a40916f06 | pp_ids-1_ids-net-2 | ea6e56cf-9a38-46db-891e-b12c09423e09 | ea6e56cf-9a38-46db-891e-b12c09423e09 |
+    | 2ed66e91-326c-4fda-80da-0498caa2d298 | pp_ids-2_ids-net-1 | 2d2eae7a-861c-4215-a77a-fd0abf8a19a1 | 2d2eae7a-861c-4215-a77a-fd0abf8a19a1 |
+    | 5cd7c5a3-09eb-4bc9-a28e-4568a5c92bf2 | pp_ids-2_ids-net-2 | edaa470b-bbbd-47e7-9f52-388fac91f336 | edaa470b-bbbd-47e7-9f52-388fac91f336 |
+    +--------------------------------------+--------------------+--------------------------------------+--------------------------------------+
+
+    openstack@cap01:~$ openstack sfc port pair group create --port-pair pp_ids-1_ids-net-1 ppg_ids-1_ids-net-1
+    +----------------------------+-------------------------------------------+
+    | Field                      | Value                                     |
+    +----------------------------+-------------------------------------------+
+    | description                |                                           |
+    | group_id                   | 3                                         |
+    | id                         | 36cc933f-4dcd-4ffb-b0a8-43034e767d4b      |
+    | name                       | ppg_ids-1_ids-net-1                       |
+    | port_pair_group_parameters | {u'lb_fields': []}                        |
+    | port_pairs                 | [u'2ed66e91-326c-4fda-80da-0498caa2d298'] |
+    | project_id                 | 9b1a8bb7e17c492a9782a6678de94067          |
+    +----------------------------+-------------------------------------------+
+    openstack@cap01:~$ openstack sfc port pair group create --port-pair pp_ids-1_ids-net-2 ppg_ids-1_ids-net-2
+    +----------------------------+-------------------------------------------+
+    | Field                      | Value                                     |
+    +----------------------------+-------------------------------------------+
+    | description                |                                           |
+    | group_id                   | 4                                         |
+    | id                         | 39409ac7-5ec8-4cec-a75a-cdbef698e6b7      |
+    | name                       | ppg_ids-1_ids-net-2                       |
+    | port_pair_group_parameters | {u'lb_fields': []}                        |
+    | port_pairs                 | [u'5cd7c5a3-09eb-4bc9-a28e-4568a5c92bf2'] |
+    | project_id                 | 9b1a8bb7e17c492a9782a6678de94067          |
+    +----------------------------+-------------------------------------------+
+
+    [Repeat to create port pair groups for all VNF instances ...]
+
+    openstack@cap01:~$ openstack sfc port pair group list
+    +--------------------------------------+---------------------+-------------------------------------------+----------------------------+
+    | ID                                   | Name                | Port Pair                                 | Port Pair Group Parameters |
+    +--------------------------------------+---------------------+-------------------------------------------+----------------------------+
+    | 0eab9ebd-b523-4278-b378-09ad553c0b91 | ppg_ids-1_ids-net-1 | [u'17809479-dd8e-4de3-91dd-2efb60310719'] | {u'lb_fields': []}         |
+    | 36cc933f-4dcd-4ffb-b0a8-43034e767d4b | ppg_ids-2_ids-net-1 | [u'2ed66e91-326c-4fda-80da-0498caa2d298'] | {u'lb_fields': []}         |
+    | 39409ac7-5ec8-4cec-a75a-cdbef698e6b7 | ppg_ids-2_ids-net-2 | [u'5cd7c5a3-09eb-4bc9-a28e-4568a5c92bf2'] | {u'lb_fields': []}         |
+    | d5f72f5c-537a-4c28-a9fc-f9ed86412f8d | ppg_ids-1_ids-net-2 | [u'2c8e2ed8-ac9c-4ca2-a9fd-6e5a40916f06'] | {u'lb_fields': []}         |
+    +--------------------------------------+---------------------+-------------------------------------------+----------------------------+
+
+
+    openstack@cap01:~$ openstack sfc port chain create --port-pair-group ppg_ids-1_ids-net-1 --flow-classifier fc_ids-snd-1_to_ids-rcv-1_ids-net-1 \
+        --flow-classifier fc_ids-rcv-1_to_ids-snd-1_ids-net-1 --flow-classifier fc_ids-snd-2_to_ids-rcv-2_ids-net-1 \
+        --flow-classifier fc_ids-rcv-2_to_ids-snd-2_ids-net-1 --flow-classifier fc_ids-snd-3_to_ids-rcv-2_ids-net-1 \
+        --flow-classifier fc_ids-rcv-2_to_ids-snd-3_ids-net-1 pc_ids-1_ids-net-1
+    +------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+    | Field            | Value                                                                                                                                                                    |
+    +------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+    | chain_id         | 1                                                                                                                                                                        |
+    | chain_parameters | {u'symmetric': False, u'correlation': u'mpls'}                                                                                                                           |
+    | description      |                                                                                                                                                                          |
+    | flow_classifiers | [u'6f75728c-5532-495d-8db9-a09866881b4e', u'3f80c0cb-ef0d-4572-8cca-452ddb7926ec', u'a454e7ed-1885-4a93-af86-0ed31c0bf915', u'd8e86849-6d94-4b64-9a1e-6178563d5e96',     |
+    |                  | u'1ef1f76f-46ca-43ea-80c3-84b961368d1f', u'f4e2f64e-09de-44f6-ae5d-9137bc62727d']                                                                                        |
+    | id               | d8d9eaf5-6c96-4f56-a2fc-a0ba06db2bdc                                                                                                                                     |
+    | name             | pc_ids-1_ids-net-1                                                                                                                                                       |
+    | port_pair_groups | [u'0eab9ebd-b523-4278-b378-09ad553c0b91']                                                                                                                                |
+    | project_id       | 9b1a8bb7e17c492a9782a6678de94067                                                                                                                                         |
+    +------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+    openstack@cap01:~$ openstack sfc port chain create --port-pair-group ppg_ids-1_ids-net-2 --flow-classifier fc_ids-snd-4_to_ids-rcv-2_ids-net-2 \
+        --flow-classifier fc_ids-rcv-2_to_ids-snd-4_ids-net-2 --flow-classifier fc_ids-snd-5_to_ids-rcv-2_ids-net-2 \
+        --flow-classifier fc_ids-rcv-2_to_ids-snd-5_ids-net-2 pc_ids-1_ids-net-2
+    +------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+    | Field            | Value                                                                                                                                                                |
+    +------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+    | chain_id         | 2                                                                                                                                                                    |
+    | chain_parameters | {u'symmetric': False, u'correlation': u'mpls'}                                                                                                                       |
+    | description      |                                                                                                                                                                      |
+    | flow_classifiers | [u'f44c89d3-0886-45c3-94ab-91b380cebef5', u'd8bf0d8d-1788-445e-9606-9aaca6b74c9e', u'e50d8c54-cbcc-47b2-9a98-7e97155b53bb', u'98801a52-dcff-4d7c-816b-96567981bdff'] |
+    | id               | 4eb04f61-a1e2-4342-94cc-08251f62d04a                                                                                                                                 |
+    | name             | pc_ids-1_ids-net-2                                                                                                                                                   |
+    | port_pair_groups | [u'd5f72f5c-537a-4c28-a9fc-f9ed86412f8d']                                                                                                                            |
+    | project_id       | 9b1a8bb7e17c492a9782a6678de94067                                                                                                                                     |
+    +------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+    openstack@cap01:~$ openstack sfc port chain list
+    +--------------------------------------+--------------------+-------------------------------------------+---------------------------------------------------------------------------------------+------------------------------------------------+
+    | ID                                   | Name               | Port Pair Groups                          | Flow Classifiers                                                                      | Chain Parameters                               |
+    +--------------------------------------+--------------------+-------------------------------------------+---------------------------------------------------------------------------------------+------------------------------------------------+
+    | 4eb04f61-a1e2-4342-94cc-08251f62d04a | pc_ids-1_ids-net-2 | [u'd5f72f5c-537a-4c28-a9fc-f9ed86412f8d'] | [u'98801a52-dcff-4d7c-816b-96567981bdff', u'd8bf0d8d-1788-445e-9606-9aaca6b74c9e',    | {u'symmetric': False, u'correlation': u'mpls'} |
+    |                                      |                    |                                           | u'e50d8c54-cbcc-47b2-9a98-7e97155b53bb', u'f44c89d3-0886-45c3-94ab-91b380cebef5']     |                                                |
+    | d8d9eaf5-6c96-4f56-a2fc-a0ba06db2bdc | pc_ids-1_ids-net-1 | [u'0eab9ebd-b523-4278-b378-09ad553c0b91'] | [u'1ef1f76f-46ca-43ea-80c3-84b961368d1f', u'3f80c0cb-ef0d-4572-8cca-452ddb7926ec',    | {u'symmetric': False, u'correlation': u'mpls'} |
+    |                                      |                    |                                           | u'6f75728c-5532-495d-8db9-a09866881b4e', u'a454e7ed-1885-4a93-af86-0ed31c0bf915',     |                                                |
+    |                                      |                    |                                           | u'd8e86849-6d94-4b64-9a1e-6178563d5e96', u'f4e2f64e-09de-44f6-ae5d-9137bc62727d']     |                                                |
+    +--------------------------------------+--------------------+-------------------------------------------+---------------------------------------------------------------------------------------+------------------------------------------------+
+
+
     ```
 
 ### On compute node:
@@ -675,35 +761,40 @@ This sections talks about how to create sfc using OpenStack module networking-sf
     2. Restart openvswitch agent.
         ```
         # service neutron-openvswitch-agent restart
-	```
+    ```
 
 * Modify iptables rules to allow outgoing traffic on VNF VMs
     ```
     openstack@wabash:~$ sudo iptables -L | grep 192.168.2.11 -C 2
-    Chain neutron-openvswi-s99c19408-4 (1 references)
+    Chain neutron-openvswi-sf5484b38-0 (1 references)
     target     prot opt source               destination
-    RETURN     all  --  192.168.2.11         anywhere             MAC FA:16:3E:50:BD:23 /* Allow traffic from defined IP/MAC pairs. */
-    DROP       all  --  anywhere             anywhere             /* Drop traffic without an IP/MAC allow rule. */
-    
-    openstack@wabash:~$ sudo iptables -D neutron-openvswi-s99c19408-4 2; sudo iptables -A neutron-openvswi-s99c19408-4 -j RETURN
+    RETURN     all  --  192.168.2.11         anywhere             MAC FA:16:3E:47:8B:F4 /* Allow traffic from defined IP/MAC pairs. \*/
+    DROP       all  --  anywhere             anywhere
+
+
+    openstack@wabash:~$ sudo iptables -D neutron-openvswi-sf5484b38-0 2; sudo iptables -A neutron-openvswi-sf5484b38-0 -j RETURN
     openstack@wabash:~$ sudo iptables -L | grep 192.168.2.11 -C 2
-    Chain neutron-openvswi-s99c19408-4 (1 references)
+    Chain neutron-openvswi-sf5484b38-0 (1 references)
     target     prot opt source               destination
-    RETURN     all  --  192.168.2.11         anywhere             MAC FA:16:3E:50:BD:23 /* Allow traffic from defined IP/MAC pairs. */
+    RETURN     all  --  192.168.2.11         anywhere             MAC FA:16:3E:47:8B:F4 /* Allow traffic from defined IP/MAC pairs. */
     RETURN     all  --  anywhere             anywhere
+
+
     
-    openstack@wabash:~$ sudo iptables -L | grep 192.168.2.12 -C 2
-    Chain neutron-openvswi-s8ee3cd1d-c (1 references)
+    openstack@wabash:~$ sudo iptables -L | grep 192.168.3.11 -C 2
+    Chain neutron-openvswi-sea6e56cf-9 (1 references)
     target     prot opt source               destination
-    RETURN     all  --  192.168.2.12         anywhere             MAC FA:16:3E:96:8C:9F /* Allow traffic from defined IP/MAC pairs. */
-    DROP       all  --  anywhere             anywhere             /* Drop traffic without an IP/MAC allow rule. */
+    RETURN     all  --  192.168.3.11         anywhere             MAC FA:16:3E:CD:AB:79 /* Allow traffic from defined IP/MAC pairs. */
+    DROP       all  --  anywhere             anywhere
+
     
-    openstack@wabash:~$ sudo iptables -D neutron-openvswi-s8ee3cd1d-c 2; sudo iptables -A neutron-openvswi-s8ee3cd1d-c -j RETURN
-    openstack@wabash:~$ sudo iptables -L | grep 192.168.2.12 -C 2
-    Chain neutron-openvswi-s8ee3cd1d-c (1 references)
+    openstack@wabash:~$ sudo iptables -D neutron-openvswi-sea6e56cf-9 2; sudo iptables -A neutron-openvswi-sea6e56cf-9 -j RETURN
+    openstack@wabash:~$ sudo iptables -L | grep 192.168.2.11 -C 2
+    Chain neutron-openvswi-sea6e56cf-9 (1 references)
     target     prot opt source               destination
-    RETURN     all  --  192.168.2.12         anywhere             MAC FA:16:3E:96:8C:9F /* Allow traffic from defined IP/MAC pairs. */
+    RETURN     all  --  192.168.3.11         anywhere             MAC FA:16:3E:CD:AB:79 /* Allow traffic from defined IP/MAC pairs. */
     RETURN     all  --  anywhere             anywhere
+
     ```
 
 ### On IDS VM:
@@ -726,46 +817,49 @@ Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqu
     ubuntu@ids-1:~$ route -n
     Kernel IP routing table
     Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-    0.0.0.0         192.168.2.1     0.0.0.0         UG    0      0        0 eth2
-    169.254.169.254 192.168.1.1     255.255.255.255 UGH   0      0        0 eth0
+    0.0.0.0         192.168.2.1     0.0.0.0         UG    0      0        0 eth1
+    169.254.169.254 192.168.2.1     255.255.255.255 UGH   0      0        0 eth1
     192.168.1.0     0.0.0.0         255.255.255.0   U     0      0        0 eth0
-    192.168.2.0     0.0.0.0         255.255.255.0   U     0      0        0 eth2
     192.168.2.0     0.0.0.0         255.255.255.0   U     0      0        0 eth1
+    192.168.3.0     0.0.0.0         255.255.255.0   U     0      0        0 eth2
     ```
 
 * Configure iptables to use nfqueue for forward traffic
     ```
-    ubuntu@ids-1:~$ sudo iptables -I FORWARD -i eth2 -j NFQUEUE
+    ubuntu@ids-1:~$ sudo iptables -I FORWARD -i eth1 -j NFQUEUE --queue-num 0
+    ubuntu@ids-1:~$ sudo iptables -I FORWARD -i eth2 -j NFQUEUE --queue-num 1
     ubuntu@ids-1:~$ sudo iptables -vnL
-    Chain INPUT (policy ACCEPT 13 packets, 972 bytes)
-     pkts bytes target     prot opt in     out     source               destination
-    
-    Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
-     pkts bytes target     prot opt in     out     source               destination
-        0     0 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
-    
-    Chain OUTPUT (policy ACCEPT 7 packets, 856 bytes)
-     pkts bytes target     prot opt in     out     source               destination
-    ```
-    and make the change permanently:
-    ```
-    $ sudo iptables -vnL
-    Chain INPUT (policy ACCEPT 711 packets, 66950 bytes)
+    Chain INPUT (policy ACCEPT 9 packets, 660 bytes)
      pkts bytes target     prot opt in     out     source               destination
 
     Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
      pkts bytes target     prot opt in     out     source               destination
-       25  2100 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
+        0     0 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 1
+        0     0 NFQUEUE    all  --  eth1   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
 
-    Chain OUTPUT (policy ACCEPT 815 packets, 105K bytes)
+    Chain OUTPUT (policy ACCEPT 5 packets, 728 bytes)
      pkts bytes target     prot opt in     out     source               destination
-     
+
+     [ping receiving VM from sending VM and confirm ICMP packets are redirected to VNF instances ...]
+
+    ubuntu@ids-1:~$ sudo iptables -vnL
+    Chain INPUT (policy ACCEPT 301 packets, 21588 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+
+    Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+        3   252 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 1
+        3   252 NFQUEUE    all  --  eth1   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
+
+    Chain OUTPUT (policy ACCEPT 196 packets, 30540 bytes)
+     pkts bytes target     prot opt in     out     source               destination
+
     $ sudo apt install iptables-persistent
     ```
 
 * Run Suricata with inline mode
     ```
-    ubuntu@ids-1:~$ sudo suricata -c /etc/suricata/suricata.yaml -q 0 -vv
+    ubuntu@ids-1:~$ sudo suricata -c /etc/suricata/suricata.yaml -q 0 -q 1 -vv
     29/6/2017 -- 01:33:26 - <Notice> - This is Suricata version 3.2.1 RELEASE
     29/6/2017 -- 01:33:26 - <Info> - CPUs/cores online: 1
     29/6/2017 -- 01:33:26 - <Info> - NFQ running in standard ACCEPT/DROP mode
@@ -857,19 +951,6 @@ Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqu
     29/6/2017 -- 01:33:51 - <Info> - cleaning up signature grouping structure... complete
     ```
 
-* Double check iptables record
-    ```
-    ubuntu@ids-1:~$ sudo iptables -vnL
-    Chain INPUT (policy ACCEPT 221 packets, 13400 bytes)
-     pkts bytes target     prot opt in     out     source               destination
-    
-    Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
-     pkts bytes target     prot opt in     out     source               destination
-       20  1680 NFQUEUE    all  --  eth2   *       0.0.0.0/0            0.0.0.0/0            NFQUEUE num 0
-    
-    Chain OUTPUT (policy ACCEPT 218 packets, 32876 bytes)
-     pkts bytes target     prot opt in     out     source               destination
-    ```
 
 
 ## <a name="ref"></a>Reference
@@ -884,6 +965,7 @@ Traffic comes in from eth2 (neutron port ids-1-ids-net-1) and redirected to nfqu
 * Rescue broken Grub 2, https://help.ubuntu.com/community/Grub2/Installing#Reinstalling_GRUB_2
 * Configuring VXLAN in Openstack Neutron, https://www.cloudenablers.com/blog/configuring-vxlan-in-openstack-neutron/
 * OpenStack: Launching an instance on a specific compute host, http://www.googlinux.com/openstack-launching-an-instance-on-a-specific-compute-host/
+* networking-sfc API 5.0, https://docs.openstack.org/networking-sfc/latest/contributor/api.html
 * networking-sfc documentation, https://docs.openstack.org/developer/networking-sfc/
 * networking-sfc developer document, https://docs.openstack.org/developer/networking-sfc/
 * networking-sfc configuration, https://docs.openstack.org/newton/networking-guide/config-sfc.html
