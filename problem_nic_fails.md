@@ -130,7 +130,7 @@ Possible solutions:
         supports-priv-flags: no
         ```
 	However, this does not seem to work and, **more importantly**, the performance of e1000 driver on guest are very bad. It consumes a lot of CPU cycles to process packets. So, it is not a option for us.  
-- [Y] Consider this problem as a failure detection and recovery problem. 
+- [x] Consider this problem as a failure detection and recovery problem. 
 	In this case, we use similar "hot swapping" method for workload generation instances. However, in order to avoid interrupting experiment as much as possible, we 
     1. Maintain two ids instances at the same time, one as "main" and the other as "backup".
     2. Run IDS and collect feature information on both of them. 
