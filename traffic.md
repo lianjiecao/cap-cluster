@@ -38,7 +38,8 @@ Refer to [**Stanford SLAC**](http://www.slac.stanford.edu/xorg/nmtf/nmtf-tools.h
  	https://github.com/caesar0301/awesome-pcaptools
 * Network trace processing tools.  
 	https://github.com/caesar0301/awesome-pcaptools
-
+* A Survey of Network Traffic Monitoring and Analysis Tools.  
+	http://www.cs.wustl.edu/~jain/cse567-06/ftp/net_traffic_monitors3/#1
 
 
 ## Evaluation of Other Publications
